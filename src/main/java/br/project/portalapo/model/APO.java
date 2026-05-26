@@ -18,6 +18,8 @@ public class APO {
 
     private String nome;
     private String matricula;
+    private Long alunoUserId;
+    private String alunoUsername;
 
     private String program;
     private String semestre;
@@ -62,7 +64,8 @@ public class APO {
         this.requiredCommissionApprovals = 3;
     }
 
-    public APO(Long id, String codigoApo, String nome, String matricula, String program,
+    public APO(Long id, String codigoApo, String nome, String matricula, Long alunoUserId,
+               String alunoUsername, String program,
                String semestre, String orientador, String coordenador, StatusAPO status,
                LocalDate dataSubmissao, LocalDate completedAt, Number totalPoints,
                Integer requiredCommissionApprovals, List<ActivityItem> activities,
@@ -71,6 +74,8 @@ public class APO {
         this.codigoApo = codigoApo;
         this.nome = nome;
         this.matricula = matricula;
+        this.alunoUserId = alunoUserId;
+        this.alunoUsername = alunoUsername;
         this.program = program;
         this.semestre = semestre;
         this.orientador = orientador;
@@ -116,6 +121,22 @@ public class APO {
 
     public void setMatricula(String matricula) {
         this.matricula = matricula;
+    }
+
+    public Long getAlunoUserId() {
+        return alunoUserId;
+    }
+
+    public void setAlunoUserId(Long alunoUserId) {
+        this.alunoUserId = alunoUserId;
+    }
+
+    public String getAlunoUsername() {
+        return alunoUsername;
+    }
+
+    public void setAlunoUsername(String alunoUsername) {
+        this.alunoUsername = alunoUsername;
     }
 
     public String getProgram() {

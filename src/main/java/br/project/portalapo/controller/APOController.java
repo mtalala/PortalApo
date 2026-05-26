@@ -1,7 +1,11 @@
 package br.project.portalapo.controller;
 
+import br.project.portalapo.config.JwtUtil;
 import br.project.portalapo.model.APO;
+import br.project.portalapo.model.User;
 import br.project.portalapo.service.APOService;
+import br.project.portalapo.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +16,13 @@ import java.util.List;
 public class APOController {
 
     private final APOService apoService;
+    private final JwtUtil jwtUtil;
+    private final UserService userService;
 
-    public APOController(APOService apoService) {
+    public APOController(APOService apoService, JwtUtil jwtUtil, UserService userService) {
         this.apoService = apoService;
+        this.jwtUtil = jwtUtil;
+        this.userService = userService;
     }
 
     // =========================
@@ -22,18 +30,18 @@ public class APOController {
     // =========================
 
     @GetMapping
-    public ResponseEntity<List<APO>> getAll() {
-        return ResponseEntity.ok(apoService.findAll());
+    public ResponseEntity<List<APO>> getAll(HttpServletRequest request) {
+        return ResponseEntity.ok(apoService.findAll(getCurrentUser(request)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<APO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(apoService.findById(id));
+    public ResponseEntity<APO> getById(@PathVariable Long id, HttpServletRequest request) {
+        return ResponseEntity.ok(apoService.findById(id, getCurrentUser(request)));
     }
 
     @PostMapping
-    public ResponseEntity<APO> create(@RequestBody APO apo) {
-        return ResponseEntity.ok(apoService.create(apo));
+    public ResponseEntity<APO> create(@RequestBody APO apo, HttpServletRequest request) {
+        return ResponseEntity.ok(apoService.create(apo, getCurrentUser(request)));
     }
 
     @PutMapping("/{id}")
@@ -53,22 +61,35 @@ public class APOController {
     // =========================
 
     @PostMapping("/{id}/aprovar-orientador")
-    public ResponseEntity<APO> aprovarOrientador(@PathVariable Long id) {
-        return ResponseEntity.ok(apoService.aprovarOrientador(id));
+    public ResponseEntity<APO> aprovarOrientador(@PathVariable Long id, HttpServletRequest request) {
+        return ResponseEntity.ok(apoService.aprovarOrientador(id, getCurrentUser(request)));
     }
 
     @PostMapping("/{id}/aprovar-coordenador")
-    public ResponseEntity<APO> aprovarCoordenador(@PathVariable Long id) {
-        return ResponseEntity.ok(apoService.aprovarCoordenador(id));
+    public ResponseEntity<APO> aprovarCoordenador(@PathVariable Long id, HttpServletRequest request) {
+        return ResponseEntity.ok(apoService.aprovarCoordenador(id, getCurrentUser(request)));
     }
 
     @PostMapping("/{id}/aprovar-comissao")
-    public ResponseEntity<APO> aprovarComissao(@PathVariable Long id) {
-        return ResponseEntity.ok(apoService.aprovarComissao(id));
+    public ResponseEntity<APO> aprovarComissao(@PathVariable Long id, HttpServletRequest request) {
+        return ResponseEntity.ok(apoService.aprovarComissao(id, getCurrentUser(request)));
     }
 
     @PostMapping("/{id}/rejeitar")
-    public ResponseEntity<APO> rejeitar(@PathVariable Long id) {
-        return ResponseEntity.ok(apoService.rejeitar(id));
+    public ResponseEntity<APO> rejeitar(@PathVariable Long id, HttpServletRequest request) {
+        return ResponseEntity.ok(apoService.rejeitar(id, getCurrentUser(request)));
+    }
+
+    private User getCurrentUser(HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+
+        String token = authHeader.substring(7);
+        String username = jwtUtil.extractUsername(token);
+
+        return userService.findByUsername(username).orElse(null);
     }
 }

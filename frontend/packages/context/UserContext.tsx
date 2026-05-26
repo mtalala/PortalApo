@@ -25,17 +25,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
 
     async function restoreSession() {
-      const [token, role, username] = await Promise.all([
+      const [token, role, username, userId] = await Promise.all([
         AsyncStorage.getItem("token"),
         AsyncStorage.getItem("role"),
         AsyncStorage.getItem("username"),
+        AsyncStorage.getItem("userId"),
       ]);
 
       if (!isMounted) return;
 
       if (token && role) {
         setUser({
-          id: "1",
+          id: userId ?? username ?? "unknown",
           name: username ?? "User",
           role: normalizeRole(role),
         });
@@ -54,13 +55,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const response = await authService.login({ username, password });
       const role = normalizeRole(response.role);
+      const userId = String(response.id);
 
       await Promise.all([
         AsyncStorage.setItem("role", role),
-        AsyncStorage.setItem("username", username),
+        AsyncStorage.setItem("username", response.username ?? username),
+        AsyncStorage.setItem("userId", userId),
       ]);
 
-      setUser({ id: "1", name: username, role });
+      setUser({ id: userId, name: response.username ?? username, role });
       setIsAuthenticated(true);
       return true;
     } catch (error) {
@@ -73,6 +76,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       AsyncStorage.removeItem("token"),
       AsyncStorage.removeItem("role"),
       AsyncStorage.removeItem("username"),
+      AsyncStorage.removeItem("userId"),
     ]);
     setUser(null);
     setIsAuthenticated(false);

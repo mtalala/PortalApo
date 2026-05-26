@@ -30,7 +30,9 @@ public class AuthController {
         // ⚠️ senha ignorada no modo DEV (ou valida manual se quiser)
         String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
 
-        Map<String, String> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", user.getId());
+        response.put("username", user.getUsername());
         response.put("token", token);
         response.put("role", user.getRole());
 
