@@ -73,7 +73,7 @@ class AlunoModelTests {
     @Test
     @DisplayName("Should use AllArgsConstructor (Aluno fields only)")
     void testAllArgsConstructor() {
-        Aluno newAluno = new Aluno("2023002", "Arquitetura", 3);
+        Aluno newAluno = new Aluno(null, null, null, false, "2023002", "Arquitetura", 3);
 
         // campos da classe Aluno
         assertEquals("2023002", newAluno.getRa());

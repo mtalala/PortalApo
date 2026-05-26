@@ -1,5 +1,6 @@
 "use client";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService } from "@/packages/services/authService";
 import type { Role, User } from "@/packages/types/user";
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
@@ -14,25 +15,52 @@ interface UserContextData {
 
 const UserContext = createContext<UserContextData | undefined>(undefined);
 
+const normalizeRole = (role: string): Role => role.toLowerCase() as Role;
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
-    if (token && role) {
-      setUser({ id: '1', name: 'User', role: role as Role }); // Mock user
-      setIsAuthenticated(true);
+    let isMounted = true;
+
+    async function restoreSession() {
+      const [token, role, username] = await Promise.all([
+        AsyncStorage.getItem("token"),
+        AsyncStorage.getItem("role"),
+        AsyncStorage.getItem("username"),
+      ]);
+
+      if (!isMounted) return;
+
+      if (token && role) {
+        setUser({
+          id: "1",
+          name: username ?? "User",
+          role: normalizeRole(role),
+        });
+        setIsAuthenticated(true);
+      }
     }
+
+    restoreSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       const response = await authService.login({ username, password });
-      localStorage.setItem('token', response.token);
-      localStorage.setItem('role', response.role);
-      setUser({ id: '1', name: username, role: response.role as any });
+      const role = normalizeRole(response.role);
+
+      await Promise.all([
+        AsyncStorage.setItem("role", role),
+        AsyncStorage.setItem("username", username),
+      ]);
+
+      setUser({ id: "1", name: username, role });
       setIsAuthenticated(true);
       return true;
     } catch (error) {
@@ -41,8 +69,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
+    Promise.all([
+      AsyncStorage.removeItem("token"),
+      AsyncStorage.removeItem("role"),
+      AsyncStorage.removeItem("username"),
+    ]);
     setUser(null);
     setIsAuthenticated(false);
   };

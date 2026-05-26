@@ -1,5 +1,5 @@
 // src/types/user.ts
-export type Role = "aluno" | "coordenador" | "orientador" | "comissao";
+export type Role = "admin" | "aluno" | "coordenador" | "orientador" | "comissao";
 
 export interface User {
   id: string;
@@ -8,4 +8,4 @@ export interface User {
   role: Role;
 }
 
-export const ROLES: Role[] = ["aluno", "coordenador", "orientador", "comissao"];
+export const ROLES: Role[] = ["admin", "aluno", "coordenador", "orientador", "comissao"];

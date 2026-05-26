@@ -91,7 +91,8 @@ export default function SolicitacoesPage() {
 
     const selectedActivitiesPayload = selectedActivities
       .map((id) => activities.find((activity) => activity.id === id))
-      .filter((activity): activity is Activity => Boolean(activity));
+      .filter((activity): activity is Activity => Boolean(activity))
+      .map(({ label, points }) => ({ label, points }));
 
     const payload = {
       codigoApo,
