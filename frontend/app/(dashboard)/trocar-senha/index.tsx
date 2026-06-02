@@ -4,16 +4,15 @@ import { useRouter } from 'expo-router';
 import { useUser } from '@/packages/context/UserContext';
 
 export default function ChangePasswordScreen() {
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { changePassword } = useUser();
+  const { forceChangePassword } = useUser();
   const router = useRouter();
 
   const handleSubmit = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       Alert.alert('Erro', 'Preencha todos os campos');
       return;
     }
@@ -29,7 +28,7 @@ export default function ChangePasswordScreen() {
     }
 
     setLoading(true);
-    const result = await changePassword(currentPassword, newPassword);
+    const result = await forceChangePassword(newPassword);
     setLoading(false);
 
     if (result.success) {
@@ -47,14 +46,6 @@ export default function ChangePasswordScreen() {
       <Text style={{ color: '#6b7280', marginBottom: 20 }}>
         Defina uma nova senha para continuar usando o portal.
       </Text>
-
-      <TextInput
-        placeholder="Senha atual"
-        value={currentPassword}
-        onChangeText={setCurrentPassword}
-        secureTextEntry
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
-      />
 
       <TextInput
         placeholder="Nova senha"

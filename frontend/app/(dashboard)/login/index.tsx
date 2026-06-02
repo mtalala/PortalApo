@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Button, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUser } from '@/packages/context/UserContext';
+import { authService } from '@/packages/services/authService';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -17,14 +18,36 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    const result = await login(username, password);
-    setLoading(false);
-
-    if (result.success) {
-      Alert.alert('Sucesso', 'Login realizado com sucesso');
-      router.replace('/');
-    } else {
-      Alert.alert('Erro', 'Credenciais inválidas');
+    try {
+      const result = await login(username, password);
+      
+      if (result.success) {
+        // Enviar código de verificação usando o username
+        try {
+          await authService.sendVerificationCode(username);
+          Alert.alert('Sucesso', 'Código de verificação enviado para seu email');
+          router.replace({
+            pathname: '/verificar-codigo',
+            params: { email: username },
+          });
+        } catch (error) {
+          console.error('Erro ao enviar código:', error);
+          Alert.alert('Aviso', 'Não foi possível enviar o código, mas você foi logado');
+          // Se não conseguir enviar o código, redireciona normalmente
+          if (result.mustChangePassword) {
+            router.replace('/trocar-senha');
+          } else {
+            router.replace('/');
+          }
+        }
+      } else {
+        Alert.alert('Erro', 'Credenciais inválidas');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      Alert.alert('Erro', 'Erro ao fazer login');
+    } finally {
+      setLoading(false);
     }
   };
 

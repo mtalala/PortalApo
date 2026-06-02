@@ -26,6 +26,24 @@ export interface ChangePasswordResponse {
   mustChangePassword: boolean;
 }
 
+export interface ForceChangePasswordResponse {
+  id: number;
+  username: string;
+  role: string;
+  mustChangePassword: boolean;
+}
+
+export interface ForceChangePasswordRequest {
+  newPassword: string;
+}
+
+export interface ForceChangePasswordResponse {
+  id: number;
+  username: string;
+  role: string;
+  mustChangePassword: boolean;
+}
+
 export const authService = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
     const response = await request<LoginResponse>('/auth/login', {
@@ -53,6 +71,17 @@ export const authService = {
     return response;
   },
 
+  forceChangePassword: async (payload: ForceChangePasswordRequest): Promise<ForceChangePasswordResponse> => {
+    const response = await request<ForceChangePasswordResponse>('/auth/force-change-password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    await AsyncStorage.setItem('mustChangePassword', String(response.mustChangePassword));
+
+    return response;
+  },
+
   logout: async () => {
     await AsyncStorage.removeItem('token');
     await AsyncStorage.removeItem('role');
@@ -63,5 +92,21 @@ export const authService = {
 
   getToken: async () => {
     return AsyncStorage.getItem('token');
+  },
+
+  sendVerificationCode: async (email: string): Promise<{ message: string }> => {
+    const response = await request<{ message: string }>('/auth/send-verification-code', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    return response;
+  },
+
+  verifyCode: async (payload: { email: string; code: string }): Promise<{ message: string }> => {
+    const response = await request<{ message: string }>('/auth/verify-code', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response;
   },
 };

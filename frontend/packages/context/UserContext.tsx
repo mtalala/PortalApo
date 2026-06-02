@@ -10,6 +10,7 @@ interface UserContextData {
   role: string | null;
   login: (username: string, password: string) => Promise<{ success: boolean; mustChangePassword: boolean }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
+  forceChangePassword: (newPassword: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
   mustChangePassword: boolean;
@@ -122,6 +123,38 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const forceChangePassword = async (
+    newPassword: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await authService.forceChangePassword({ newPassword });
+      const role = normalizeRole(response.role);
+      const userId = String(response.id);
+
+      await Promise.all([
+        AsyncStorage.setItem("role", role),
+        AsyncStorage.setItem("username", response.username),
+        AsyncStorage.setItem("userId", userId),
+        AsyncStorage.setItem("mustChangePassword", String(response.mustChangePassword)),
+      ]);
+
+      setUser({
+        id: userId,
+        name: response.username,
+        role,
+        mustChangePassword: response.mustChangePassword,
+      });
+      setMustChangePassword(response.mustChangePassword);
+      setIsAuthenticated(true);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Não foi possível alterar a senha",
+      };
+    }
+  };
+
   const logout = () => {
     Promise.all([
       AsyncStorage.removeItem("token"),
@@ -139,9 +172,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     <UserContext.Provider
       value={{
         user,
-        role: user?.role ?? null,
+        role: user?.role as string | null ?? null,
         login,
         changePassword,
+        forceChangePassword,
         logout,
         isAuthenticated,
         mustChangePassword,

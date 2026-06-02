@@ -230,7 +230,7 @@ export default function SolicitacoesPage() {
             coordenador === c.id && styles.optionActive,
           ]}
         >
-          <Text>{c.name}</Text>
+          <Text>{c.username}</Text>
         </Pressable>
       ))}
 

@@ -1,6 +1,7 @@
 package br.project.portalapo.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +19,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(unique = true)
+    private String email;
+
     @Column(nullable = false)
     private String role; // e.g., ADMIN, COORDENADOR, ALUNO
 
@@ -26,6 +30,12 @@ public class User {
 
     @Column(nullable = false)
     private boolean mustChangePassword = true;
+
+    @Column
+    private String verificationCode;
+
+    @Column
+    private LocalDateTime verificationCodeExpiry;
 
     @ElementCollection
     @CollectionTable(name = "user_orientador_assignments", joinColumns = @JoinColumn(name = "user_id"))
@@ -72,6 +82,14 @@ public class User {
         this.password = password;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public String getRole() {
         return role;
     }
@@ -94,6 +112,22 @@ public class User {
 
     public void setMustChangePassword(boolean mustChangePassword) {
         this.mustChangePassword = mustChangePassword;
+    }
+
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+
+    public void setVerificationCode(String verificationCode) {
+        this.verificationCode = verificationCode;
+    }
+
+    public LocalDateTime getVerificationCodeExpiry() {
+        return verificationCodeExpiry;
+    }
+
+    public void setVerificationCodeExpiry(LocalDateTime verificationCodeExpiry) {
+        this.verificationCodeExpiry = verificationCodeExpiry;
     }
 
     public List<Long> getOrientadorUserIds() {
