@@ -33,6 +33,8 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        - EXPO_PUBLIC_API_URL=http://3.85.109.209
     image: apo-frontend
     container_name: apo-frontend
     # Mudança aqui: Força o modo web na porta correta exposta para a rede local/externa

@@ -14,6 +14,8 @@ COPY package*.json ./
 # Instala as dependências do seu projeto
 RUN npm install
 
+ARG EXPO_PUBLIC_API_URL
+
 # Copia o restante dos arquivos do seu código
 COPY . .
 
