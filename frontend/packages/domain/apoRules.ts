@@ -11,7 +11,9 @@ export function canApproveApo(
 
   // evita aprovar duas vezes
   const alreadyApproved = apo.approvals.some(
-    (a) => a.userId === user.id && a.role === user.role
+    (a) =>
+      String(a.userId) === String(user.id) &&
+      a.role.toLowerCase() === user.role
   );
   if (alreadyApproved) return false;
 

@@ -7,6 +7,9 @@ import br.project.portalapo.service.APOService;
 import br.project.portalapo.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,6 +68,15 @@ public class APOController {
         return ResponseEntity.ok(apoService.aprovarOrientador(id, getCurrentUser(request)));
     }
 
+    @PostMapping("/{id}/avaliar-orientador")
+    public ResponseEntity<APO> avaliarOrientador(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "true") boolean approved,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity.ok(apoService.avaliarOrientador(id, getCurrentUser(request), approved));
+    }
+
     @PostMapping("/{id}/aprovar-coordenador")
     public ResponseEntity<APO> aprovarCoordenador(@PathVariable Long id, HttpServletRequest request) {
         return ResponseEntity.ok(apoService.aprovarCoordenador(id, getCurrentUser(request)));
@@ -81,15 +93,37 @@ public class APOController {
     }
 
     private User getCurrentUser(HttpServletRequest request) {
-        String authHeader = request.getHeader("Authorization");
+        // Try to get from SecurityContext first
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            String username = null;
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return null;
+            if (principal instanceof UserDetails userDetails) {
+                username = userDetails.getUsername();
+            } else if (principal instanceof String name) {
+                username = name;
+            }
+
+            if (username != null) {
+                return userService.findByUsername(username).orElse(null);
+            }
         }
 
-        String token = authHeader.substring(7);
-        String username = jwtUtil.extractUsername(token);
+        // Fallback: try to parse token directly
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            try {
+                String token = authHeader.substring(7);
+                String username = jwtUtil.extractUsername(token);
+                if (username != null) {
+                    return userService.findByUsername(username).orElse(null);
+                }
+            } catch (Exception e) {
+                // Token parsing failed
+            }
+        }
 
-        return userService.findByUsername(username).orElse(null);
+        return null;
     }
 }

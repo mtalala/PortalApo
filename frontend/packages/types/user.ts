@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email?: string;
   role: Role;
+  mustChangePassword?: boolean;
 }
 
 export const ROLES: Role[] = ["admin", "aluno", "coordenador", "orientador", "comissao"];

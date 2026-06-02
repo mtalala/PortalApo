@@ -6,7 +6,7 @@ import RequestCard from "@/components/dashboard/RequestCard";
 import RequestCardSkeleton from "@/components/dashboard/RequestCardSkeleton";
 
 import { getApos } from "@/packages/services/apoService";
-import { getApoVisualStatus } from "@/packages/domain/apoVisualStatus";
+import { getApoVisualStatus, getApoVisualStatusForUser } from "@/packages/domain/apoVisualStatus";
 import type { Apo } from "@/packages/types/apo";
 
 export default function HomeScreen() {
@@ -43,7 +43,7 @@ export default function HomeScreen() {
   if (!user) return null;
 
   const pendentes = apos.filter(
-    (apo) => getApoVisualStatus(apo.status) === "PENDENTE"
+    (apo) => getApoVisualStatusForUser(apo, user) === "PENDENTE"
   );
 
   const aprovadas = apos.filter(
@@ -85,7 +85,7 @@ export default function HomeScreen() {
           )
           : pendentes.slice(0, 6).map((apo) => (
               <View key={apo.id} style={{ flexBasis: `${100 / getColumns()}%` }}>
-                <RequestCard apo={apo} />
+                <RequestCard apo={apo} currentUser={user} />
               </View>
             ))}
       </View>

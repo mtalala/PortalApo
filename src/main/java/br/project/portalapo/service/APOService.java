@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,6 +35,22 @@ public class APOService {
 
         if (isAluno(currentUser)) {
             return apoRepository.findByAlunoUserId(currentUser.getId());
+        }
+
+        if (isOrientador(currentUser)) {
+            return apoRepository.findByOrientadorUserIdsContaining(currentUser.getId());
+        }
+
+        if (isComissao(currentUser)) {
+            // Committee members should only see APOs that are awaiting committee review
+            return apoRepository.findByStatus(StatusAPO.PENDENTE_COMISSAO);
+        }
+
+        if (isCoordenador(currentUser)) {
+            if (currentUser.getId() != null) {
+                return apoRepository.findByCoordenadorUserIdAndStatusNot(currentUser.getId(), StatusAPO.PENDENTE_ORIENTADOR);
+            }
+            return apoRepository.findByCoordenadorUsernameAndStatusNot(currentUser.getUsername(), StatusAPO.PENDENTE_ORIENTADOR);
         }
 
         return apoRepository.findAll();
@@ -75,6 +93,14 @@ public class APOService {
             apo.setStatus(StatusAPO.PENDENTE_ORIENTADOR);
         }
 
+        if (apo.getRequiredCommissionApprovals() == null) {
+            apo.setRequiredCommissionApprovals(3);
+        }
+
+        if (apo.getDataSubmissao() == null) {
+            apo.setDataSubmissao(LocalDate.now());
+        }
+
         apo.calcularTotalPoints();
         return apoRepository.save(apo);
     }
@@ -93,6 +119,10 @@ public class APOService {
         apo.setSemestre(updated.getSemestre());
         apo.setOrientador(updated.getOrientador());
         apo.setCoordenador(updated.getCoordenador());
+        apo.setOrientadorUserIds(updated.getOrientadorUserIds());
+        apo.setOrientadorUsernames(updated.getOrientadorUsernames());
+        apo.setCoordenadorUserId(updated.getCoordenadorUserId());
+        apo.setCoordenadorUsername(updated.getCoordenadorUsername());
 
         apo.setActivities(updated.getActivities());
         apo.setFiles(updated.getFiles());
@@ -112,12 +142,7 @@ public class APOService {
     // =========================
 
     public APO aprovarOrientador(Long id, User currentUser) {
-        requireRole(currentUser, "ORIENTADOR");
-        APO apo = findById(id);
-        requireStatus(apo, StatusAPO.PENDENTE_ORIENTADOR);
-        addApproval(apo, currentUser, RoleAprovacao.ORIENTADOR);
-        apo.aprovarOrientador();
-        return apoRepository.save(apo);
+        return avaliarOrientador(id, currentUser, true);
     }
 
     public APO aprovarOrientador(Long id) {
@@ -126,11 +151,34 @@ public class APOService {
         return apoRepository.save(apo);
     }
 
+    public APO avaliarOrientador(Long id, User currentUser, boolean approved) {
+        requireRole(currentUser, "ORIENTADOR");
+        APO apo = findById(id);
+        requireStatus(apo, StatusAPO.PENDENTE_ORIENTADOR);
+        
+        // Ensure approvals list is initialized
+        if (apo.getApprovals() == null) {
+            apo.setApprovals(new ArrayList<>());
+        }
+        
+        addApproval(apo, currentUser, RoleAprovacao.ORIENTADOR, approved);
+        // If all assigned orientadores have evaluated, move to committee review
+        long requiredOrientadorApprovals = apo.getOrientadorUserIds() == null
+                ? 0
+                : apo.getOrientadorUserIds().stream().distinct().count();
+
+        if (requiredOrientadorApprovals > 0 && apo.getOrientadorEvaluationsCount() >= requiredOrientadorApprovals) {
+            apo.aprovarOrientador();
+        }
+
+        return apoRepository.save(apo);
+    }
+
     public APO aprovarCoordenador(Long id, User currentUser) {
         requireRole(currentUser, "COORDENADOR");
         APO apo = findById(id);
         requireStatus(apo, StatusAPO.PENDENTE_COORDENACAO);
-        addApproval(apo, currentUser, RoleAprovacao.COORDENADOR);
+        addApproval(apo, currentUser, RoleAprovacao.COORDENADOR, true);
         apo.aprovarCoordenador();
         return apoRepository.save(apo);
     }
@@ -145,8 +193,12 @@ public class APOService {
         requireRole(currentUser, "COMISSAO");
         APO apo = findById(id);
         requireStatus(apo, StatusAPO.PENDENTE_COMISSAO);
-        addApproval(apo, currentUser, RoleAprovacao.COMISSAO);
-        apo.aprovarComissao();
+        addApproval(apo, currentUser, RoleAprovacao.COMISSAO, true);
+        // Only move to coordinator review when required number of committee approvals reached
+        Integer required = apo.getRequiredCommissionApprovals() == null ? 3 : apo.getRequiredCommissionApprovals();
+        if (apo.getComissaoEvaluationsCount() >= required) {
+            apo.aprovarComissao();
+        }
         return apoRepository.save(apo);
     }
 
@@ -176,6 +228,18 @@ public class APOService {
         return user != null && "ALUNO".equalsIgnoreCase(user.getRole());
     }
 
+    private boolean isOrientador(User user) {
+        return user != null && "ORIENTADOR".equalsIgnoreCase(user.getRole());
+    }
+
+    private boolean isCoordenador(User user) {
+        return user != null && "COORDENADOR".equalsIgnoreCase(user.getRole());
+    }
+
+    private boolean isComissao(User user) {
+        return user != null && "COMISSAO".equalsIgnoreCase(user.getRole());
+    }
+
     private void requireRole(User user, String role) {
         if (user == null || !role.equalsIgnoreCase(user.getRole())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado para a etapa: " + role);
@@ -188,15 +252,15 @@ public class APOService {
         }
     }
 
-    private void addApproval(APO apo, User user, RoleAprovacao role) {
-        boolean alreadyApproved = apo.getApprovals() != null && apo.getApprovals().stream()
+    private void addApproval(APO apo, User user, RoleAprovacao role, boolean approved) {
+        boolean alreadyReviewed = apo.getApprovals() != null && apo.getApprovals().stream()
                 .anyMatch(approval -> String.valueOf(user.getId()).equals(approval.getUserId())
                         && approval.getRole() == role);
 
-        if (alreadyApproved) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário já aprovou esta APO");
+        if (alreadyReviewed) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário já avaliou esta APO");
         }
 
-        apo.getApprovals().add(new ApprovalItem(String.valueOf(user.getId()), role, true));
+        apo.getApprovals().add(new ApprovalItem(String.valueOf(user.getId()), role, approved));
     }
 }

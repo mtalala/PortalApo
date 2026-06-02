@@ -1,27 +1,17 @@
 // src/components/dashboard/RequestCard.tsx
 import { APO_DECORATIVE_COLORS } from "@/packages/data/apoDecorativeColors";
-import type { ApoStatus } from "@/packages/domain/apoStatus";
-import { getApoVisualStatus } from "@/packages/domain/apoVisualStatus";
+import { getApoVisualStatus, getApoVisualStatusForUser } from "@/packages/domain/apoVisualStatus";
 import { getApoVisualStatusColor } from "@/packages/domain/apoVisualStatusColor";
 import { getApoVisualStatusLabel } from "@/packages/domain/apoVisualStatusLabel";
 import { router } from "expo-router";
+import type { Apo } from "@/packages/types/apo";
+import type { User } from "@/packages/types/user";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-interface Activity {
-  label: string;
-}
-
-export interface Apo {
-  id: string;
-  status: ApoStatus;
-  nome: string;
-  program: string;
-  activities: Activity[];
-}
-
 interface Props {
   apo?: Apo;
+  currentUser?: User;
   onPress?: () => void;
 }
 
@@ -37,10 +27,12 @@ function getDecorativeColorByApoId(id: string): string {
   return APO_DECORATIVE_COLORS[index];
 }
 
-export default function RequestCard({ apo, onPress }: Props) {
+export default function RequestCard({ apo, currentUser, onPress }: Props) {
   if (!apo) return null;
 
-  const visualStatus = getApoVisualStatus(apo.status);
+  const visualStatus = currentUser
+    ? getApoVisualStatusForUser(apo, currentUser)
+    : getApoVisualStatus(apo.status);
   const statusLabel = getApoVisualStatusLabel(visualStatus);
   const statusColor = getApoVisualStatusColor(visualStatus);
   const decorativeColor = getDecorativeColorByApoId(apo.id);

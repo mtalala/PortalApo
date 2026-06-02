@@ -15,11 +15,12 @@ import {
 import * as DocumentPicker from "expo-document-picker";
 
 import activitiesData from "@/packages/data/activities";
-import coordenadoresData from "@/packages/data/coordenadores";
 import programsData from "@/packages/data/programs";
 import { createApo } from "@/packages/services/apoService";
 import { getPrograms } from "@/packages/services/programService";
-import type { Activity, Coordenador, Program } from "@/packages/types/types";
+import { adminUserService, AdminUser } from "@/packages/services/adminUserService";
+import { orientadorService, Orientador } from "@/packages/services/orientadorService";
+import type { Activity, Program } from "@/packages/types/types";
 
 type SelectedFile = DocumentPicker.DocumentPickerAsset;
 
@@ -27,7 +28,7 @@ export default function SolicitacoesPage() {
   const [program, setProgram] = useState<number | null>(null);
   const [matricula, setMatricula] = useState("");
   const [nome, setNome] = useState("");
-  const [orientador, setOrientador] = useState("");
+  const [selectedOrientadores, setSelectedOrientadores] = useState<number[]>([]);
   const [coordenador, setCoordenador] = useState<number | null>(null);
   const [semestre, setSemestre] = useState("");
   const [codigoApo, setCodigoApo] = useState("");
@@ -36,17 +37,48 @@ export default function SolicitacoesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [programs, setPrograms] = useState<Program[]>([]);
-  const [coordenadores, setCoordenadores] = useState<Coordenador[]>([]);
+  const [orientadores, setOrientadores] = useState<AdminUser[]>([]);
+  const [coordenadores, setCoordenadores] = useState<AdminUser[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const users = await adminUserService.getAll();
+        const fromUsers = users.filter((user) => user.role?.toUpperCase() === 'ORIENTADOR' && user.ativo);
+        const fromCoordenadores = users.filter((user) => user.role?.toUpperCase() === 'COORDENADOR' && user.ativo);
+
+        // also try to fetch Orientadores from dedicated endpoint (after backend refactor some orientadores
+        // may be stored as Pessoa/Orientador entities)
+        let fromOrientadores: AdminUser[] = [];
+        try {
+          const os = await orientadorService.getAll();
+          fromOrientadores = os
+            .filter((o) => o.ativo)
+            .map((o) => ({ id: o.id, username: o.nome } as AdminUser));
+        } catch (e) {
+          // ignore, fallback to users
+        }
+
+        // merge unique orientadores by id
+        const mergedOrientadoresMap = new Map<number, AdminUser>();
+        [...fromUsers, ...fromOrientadores].forEach((u) => mergedOrientadoresMap.set(u.id, u));
+
+        setOrientadores(Array.from(mergedOrientadoresMap.values()));
+        setCoordenadores(fromCoordenadores);
+      } catch {
+        setOrientadores([]);
+        setCoordenadores([]);
+      }
+    };
+
     getPrograms()
       .then((data) => setPrograms(data))
       .catch(() => setPrograms(programsData))
       .finally(() => setLoading(false));
 
-    setCoordenadores(coordenadoresData);
+    loadUsers();
     setActivities(activitiesData);
   }, []);
 
@@ -79,7 +111,7 @@ export default function SolicitacoesPage() {
       !coordenador ||
       !matricula ||
       !nome ||
-      !orientador ||
+      selectedOrientadores.length === 0 ||
       !semestre ||
       !codigoApo
     ) {
@@ -94,14 +126,18 @@ export default function SolicitacoesPage() {
       .filter((activity): activity is Activity => Boolean(activity))
       .map(({ label, points }) => ({ label, points }));
 
+    const selectedOrientadorUsers = orientadores.filter((o) => selectedOrientadores.includes(o.id));
     const payload = {
       codigoApo,
       matricula,
       nome,
       program: programs.find((p) => p.id === program)?.name ?? "",
       semestre,
-      orientador,
-      coordenador: coordenadores.find((c) => c.id === coordenador)?.name ?? "",
+      orientador: selectedOrientadorUsers.map((o) => o.username).join(", "),
+      orientadorUserIds: selectedOrientadores,
+      orientadorUsernames: selectedOrientadorUsers.map((o) => o.username),
+      coordenador: coordenadores.find((c) => c.id === coordenador)?.username ?? "",
+      coordenadorUserId: coordenador,
       status: "PENDENTE_ORIENTADOR" as const,
       dataSubmissao: new Date().toISOString().split("T")[0],
       totalPoints,
@@ -120,7 +156,7 @@ export default function SolicitacoesPage() {
       setProgram(null);
       setMatricula("");
       setNome("");
-      setOrientador("");
+      setSelectedOrientadores([]);
       setCoordenador(null);
       setSemestre("");
       setCodigoApo("");
@@ -157,7 +193,30 @@ export default function SolicitacoesPage() {
 
       <Input label="Código de matrícula" value={matricula} onChange={setMatricula} />
       <Input label="Nome" value={nome} onChange={setNome} />
-      <Input label="Nome do Orientador" value={orientador} onChange={setOrientador} />
+      <Text style={styles.label}>Selecionar Orientadores</Text>
+      {orientadores.length === 0 ? (
+        <Text>Nenhum orientador ativo encontrado.</Text>
+      ) : (
+        orientadores.map((o) => {
+          const selected = selectedOrientadores.includes(o.id);
+          return (
+            <Pressable
+              key={o.id}
+              onPress={() =>
+                setSelectedOrientadores((prev) =>
+                  prev.includes(o.id) ? prev.filter((id) => id !== o.id) : [...prev, o.id]
+                )
+              }
+              style={[
+                styles.option,
+                selected && styles.optionActive,
+              ]}
+            >
+              <Text>{o.username}</Text>
+            </Pressable>
+          );
+        })
+      )}
       <Input label="Semestre" value={semestre} onChange={setSemestre} />
       <Input label="Código da APO" value={codigoApo} onChange={setCodigoApo} />
 

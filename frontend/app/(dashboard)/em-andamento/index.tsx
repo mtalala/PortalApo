@@ -6,7 +6,7 @@ import RequestCard from "@/components/dashboard/RequestCard";
 import RequestCardSkeleton from "@/components/dashboard/RequestCardSkeleton";
 
 import { getApos } from "@/packages/services/apoService";
-import { getApoVisualStatus } from "@/packages/domain/apoVisualStatus";
+import { getApoVisualStatus, getApoVisualStatusForUser } from "@/packages/domain/apoVisualStatus";
 import type { Apo } from "@/packages/types/apo";
 
 export default function EmAndamentoScreen() {
@@ -41,7 +41,7 @@ export default function EmAndamentoScreen() {
   if (!user) return null;
 
   const emAndamento = apos.filter(
-    (apo) => getApoVisualStatus(apo.status) === "EM_ANDAMENTO"
+    (apo) => getApoVisualStatusForUser(apo, user) === "EM_ANDAMENTO"
   );
 
   return (
@@ -64,7 +64,7 @@ export default function EmAndamentoScreen() {
           )
           : emAndamento.map((apo) => (
               <View key={apo.id} style={{ flexBasis: `${100 / getColumns()}%` }}>
-                <RequestCard apo={apo} />
+                <RequestCard apo={apo} currentUser={user} />
               </View>
             ))}
       </View>

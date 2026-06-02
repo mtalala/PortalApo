@@ -1,6 +1,8 @@
 package br.project.portalapo.model;
 
 import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -22,6 +24,14 @@ public class User {
     @Column(nullable = false)
     private boolean ativo = true;
 
+    @Column(nullable = false)
+    private boolean mustChangePassword = true;
+
+    @ElementCollection
+    @CollectionTable(name = "user_orientador_assignments", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "orientador_user_id")
+    private List<Long> orientadorUserIds = new ArrayList<>();
+
     // Relacionamento com Pessoa se necessário
     // @OneToOne
     // @JoinColumn(name = "pessoa_id")
@@ -35,6 +45,7 @@ public class User {
         this.password = password;
         this.role = role;
         this.ativo = ativo;
+        this.mustChangePassword = true;
     }
 
     public Long getId() {
@@ -75,6 +86,22 @@ public class User {
 
     public void setAtivo(boolean ativo) {
         this.ativo = ativo;
+    }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
+    }
+
+    public List<Long> getOrientadorUserIds() {
+        return orientadorUserIds;
+    }
+
+    public void setOrientadorUserIds(List<Long> orientadorUserIds) {
+        this.orientadorUserIds = orientadorUserIds != null ? orientadorUserIds : new ArrayList<>();
     }
 
 }

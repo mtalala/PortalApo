@@ -17,10 +17,10 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    const success = await login(username, password);
+    const result = await login(username, password);
     setLoading(false);
 
-    if (success) {
+    if (result.success) {
       Alert.alert('Sucesso', 'Login realizado com sucesso');
       router.replace('/');
     } else {
@@ -31,12 +31,14 @@ export default function LoginScreen() {
   return (
     <View style={{ padding: 20 }}>
       <Text style={{ fontSize: 24, marginBottom: 20 }}>Login</Text>
+
       <TextInput
         placeholder="Username"
         value={username}
         onChangeText={setUsername}
         style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
       />
+
       <TextInput
         placeholder="Password"
         value={password}
@@ -44,7 +46,12 @@ export default function LoginScreen() {
         secureTextEntry
         style={{ borderWidth: 1, padding: 10, marginBottom: 20 }}
       />
-      <Button title={loading ? 'Entrando...' : 'Entrar'} onPress={handleLogin} disabled={loading} />
+
+      <Button
+        title={loading ? 'Entrando...' : 'Entrar'}
+        onPress={handleLogin}
+        disabled={loading}
+      />
     </View>
   );
 }

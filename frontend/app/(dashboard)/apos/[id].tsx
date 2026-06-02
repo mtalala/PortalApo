@@ -161,6 +161,11 @@ export default function ApoViewScreen() {
   }
 
   const allowedToApprove = canApproveApo(apo, user);
+  const userApproval = apo.approvals.find(
+    (approval) =>
+      String(approval.userId) === String(user.id) &&
+      approval.role.toLowerCase() === user.role
+  );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -179,16 +184,36 @@ export default function ApoViewScreen() {
             marginBottom: 24,
           }}
         >
-          <Text
-            style={{
-              fontSize: isDesktop ? 32 : 22,
-              fontWeight: "700",
-              color: "#111827",
-              marginBottom: isDesktop ? 0 : 8,
-            }}
-          >
-            APO {apo.codigoApo}
-          </Text>
+          <View>
+            <Text
+              style={{
+                fontSize: isDesktop ? 32 : 22,
+                fontWeight: "700",
+                color: "#111827",
+                marginBottom: isDesktop ? 0 : 8,
+              }}
+            >
+              APO {apo.codigoApo}
+            </Text>
+            {userApproval && (
+              <View
+                style={{
+                  marginTop: 8,
+                  backgroundColor: userApproval.approved
+                    ? "#16a34a"
+                    : "#dc2626",
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  alignSelf: "flex-start",
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+                  {userApproval.approved ? "Aprovada" : "Rejeitada"}
+                </Text>
+              </View>
+            )}
+          </View>
 
           <View
             style={{
@@ -196,6 +221,7 @@ export default function ApoViewScreen() {
               paddingHorizontal: 14,
               paddingVertical: 6,
               borderRadius: 999,
+              marginTop: isDesktop ? 0 : 12,
             }}
           >
             <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>

@@ -4,7 +4,7 @@ import type { Role } from "./user";
 
 export interface ApoApproval {
   userId: string;
-  role: Role;
+  role: Role | Uppercase<Role> | string;
   approved: boolean;
 }
 
@@ -41,4 +41,8 @@ export interface Apo {
   approvals: ApoApproval[];
 
   requiredCommissionApprovals: number;
+
+  orientadorUserIds?: number[];
+  orientadorUsernames?: string[];
+  coordenadorUserId?: number;
 }
