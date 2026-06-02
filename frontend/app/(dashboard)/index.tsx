@@ -4,9 +4,10 @@ import { ScrollView, Text, useWindowDimensions, View } from "react-native";
 
 import RequestCard from "@/components/dashboard/RequestCard";
 import RequestCardSkeleton from "@/components/dashboard/RequestCardSkeleton";
+import CreditProgress from "@/components/CreditProgress";
 
 import { getApos } from "@/packages/services/apoService";
-import { getApoVisualStatus } from "@/packages/domain/apoVisualStatus";
+import { getApoVisualStatus, getApoVisualStatusForUser } from "@/packages/domain/apoVisualStatus";
 import type { Apo } from "@/packages/types/apo";
 
 export default function HomeScreen() {
@@ -43,12 +44,13 @@ export default function HomeScreen() {
   if (!user) return null;
 
   const pendentes = apos.filter(
-    (apo) => getApoVisualStatus(apo.status) === "PENDENTE"
+    (apo) => getApoVisualStatusForUser(apo, user) === "PENDENTE"
   );
 
   const aprovadas = apos.filter(
     (apo) => getApoVisualStatus(apo.status) === getApoVisualStatus("APROVADA")
   );
+  const totalCreditos = aprovadas.reduce((total, apo) => total + (apo.totalPoints ?? 0), 0);
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16 }}>
@@ -61,6 +63,10 @@ export default function HomeScreen() {
           {apos.length} APOs no sistema
         </Text>
       </View>
+
+      {user.role === "aluno" && (
+        <CreditProgress totalCreditos={totalCreditos} />
+      )}
 
       {/* RESUMO */}
       <View style={{ marginBottom: 32 }}>
@@ -85,7 +91,7 @@ export default function HomeScreen() {
           )
           : pendentes.slice(0, 6).map((apo) => (
               <View key={apo.id} style={{ flexBasis: `${100 / getColumns()}%` }}>
-                <RequestCard apo={apo} />
+                <RequestCard apo={apo} currentUser={user} />
               </View>
             ))}
       </View>

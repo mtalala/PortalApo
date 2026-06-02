@@ -41,9 +41,10 @@ export async function approveApo(id: string, role: Role): Promise<Apo> {
   }
 }
 
-export async function rejectApo(id: string): Promise<Apo> {
+export async function rejectApo(id: string, justificativa: string): Promise<Apo> {
   return request<Apo>(`${APO_PATH}/${id}/rejeitar`, {
     method: "POST",
+    body: JSON.stringify({ justificativa }),
   });
 }
 

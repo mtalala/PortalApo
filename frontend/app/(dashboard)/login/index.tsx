@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useUser } from '@/packages/context/UserContext';
 
@@ -17,34 +17,80 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    const success = await login(username, password);
-    setLoading(false);
+    try {
+      const result = await login(username, password);
 
-    if (success) {
-      Alert.alert('Sucesso', 'Login realizado com sucesso');
-      router.replace('/');
-    } else {
-      Alert.alert('Erro', 'Credenciais inválidas');
+      if (result.success) {
+        if (result.mustChangePassword) {
+          router.replace('/trocar-senha');
+        } else {
+          router.replace('/');
+        }
+      } else {
+        Alert.alert('Erro', 'Credenciais inválidas');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      Alert.alert('Erro', 'Erro ao fazer login');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 24, marginBottom: 20 }}>Login</Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Login</Text>
+
       <TextInput
         placeholder="Username"
         value={username}
         onChangeText={setUsername}
-        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
+        autoCapitalize="none"
+        style={styles.input}
       />
+
       <TextInput
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        style={{ borderWidth: 1, padding: 10, marginBottom: 20 }}
+        style={styles.input}
       />
-      <Button title={loading ? 'Entrando...' : 'Entrar'} onPress={handleLogin} disabled={loading} />
+
+      <Button
+        title={loading ? 'Entrando...' : 'Entrar'}
+        onPress={handleLogin}
+        disabled={loading}
+      />
+
+      <TouchableOpacity onPress={() => router.push('/esqueci-senha')} style={styles.forgotContainer}>
+        <Text style={styles.forgotLink}>Esqueci minha senha</Text>
+      </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 10,
+  },
+  forgotContainer: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  forgotLink: {
+    color: '#2563eb',
+    fontSize: 14,
+  },
+});

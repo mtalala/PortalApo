@@ -1,99 +1,81 @@
 package br.project.portalapo.service;
 
 import br.project.portalapo.model.Notification;
-import org.junit.jupiter.api.BeforeEach;
+import br.project.portalapo.repository.NotificationRepository;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@DisplayName("NotificationService Tests")
+@ExtendWith(MockitoExtension.class)
 class NotificationServiceTests {
 
-    private NotificationService notificationService;
-    private List<Notification> mockNotifications;
+    @Mock
+    private NotificationRepository repository;
 
-    @BeforeEach
-    void setUp() {
-        mockNotifications = new ArrayList<>();
-        
-        Notification notification1 = new Notification(
-            "1",
-            "ADMIN",
-            "Nova solicitação recebida",
-            "blue",
-            "2024-05-12",
-            false
-        );
-        
-        Notification notification2 = new Notification(
-            "2",
-            "USER",
-            "Solicitação aprovada",
-            "green",
-            "2024-05-11",
-            true
-        );
-        
-        mockNotifications.add(notification1);
-        mockNotifications.add(notification2);
-        
-        notificationService = new NotificationService(mockNotifications);
+    @InjectMocks
+    private NotificationService service;
+
+    @Test
+    void shouldReturnAllNotifications() {
+        Notification n = new Notification();
+        n.setId("1");
+        n.setRole("Aluno");
+        n.setTopic("Teste");
+
+        when(repository.findAll()).thenReturn(List.of(n));
+
+        List<Notification> result = service.findAll();
+
+        assertEquals(1, result.size());
+        verify(repository, times(1)).findAll();
     }
 
     @Test
-    @DisplayName("Should find all notifications")
-    void testFindAll() {
-        List<Notification> result = notificationService.findAll();
+    void shouldReturnUnreadNotifications() {
+        Notification n1 = new Notification();
+        n1.setId("1");
+        n1.setRead(false);
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
+        when(repository.findByReadFalse()).thenReturn(List.of(n1));
 
-    @Test
-    @DisplayName("Should find unread notifications")
-    void testFindUnread() {
-        List<Notification> result = notificationService.findUnread();
+        List<Notification> result = service.findUnread();
 
-        assertNotNull(result);
         assertEquals(1, result.size());
         assertFalse(result.get(0).isRead());
     }
 
     @Test
-    @DisplayName("Should return empty list if all read")
-    void testFindUnreadEmpty() {
-        List<Notification> allRead = new ArrayList<>();
-        Notification notification = new Notification(
-            "1",
-            "ADMIN",
-            "Test",
-            "blue",
-            "2024-05-12",
-            true
-        );
-        allRead.add(notification);
-        
-        NotificationService service = new NotificationService(allRead);
-        List<Notification> result = service.findUnread();
+    void shouldMarkAsRead() {
+        Notification n = new Notification();
+        n.setId("1");
+        n.setRead(false);
 
-        assertEquals(0, result.size());
+        when(repository.findById("1")).thenReturn(Optional.of(n));
+
+        service.markAsRead("1");
+
+        assertTrue(n.isRead());
     }
 
     @Test
-    @DisplayName("Should have correct notification data")
-    void testNotificationContent() {
-        List<Notification> notifications = notificationService.findAll();
-        Notification first = notifications.get(0);
+    void shouldCreateNotification() {
+        Notification saved = new Notification();
+        saved.setId("1");
+        saved.setRole("Aluno");
 
-        assertEquals("1", first.getId());
-        assertEquals("ADMIN", first.getRole());
-        assertEquals("Nova solicitação recebida", first.getTopic());
-        assertEquals("blue", first.getRequestColor());
-        assertEquals("2024-05-12", first.getCreatedAt());
-        assertFalse(first.isRead());
+        when(repository.save(any(Notification.class))).thenReturn(saved);
+
+        Notification result = service.create("Aluno", "Topic", "#fff");
+
+        assertNotNull(result);
+        verify(repository, times(1)).save(any(Notification.class));
     }
 }

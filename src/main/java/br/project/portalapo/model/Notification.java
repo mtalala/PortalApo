@@ -1,17 +1,53 @@
 package br.project.portalapo.model;
 
+import jakarta.persistence.*;
+import java.time.OffsetDateTime;
+
+@Entity
+@Table(name = "notifications")
 public class Notification {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+
     private String role;
+
     private String topic;
+
+    @Column(name = "request_color")
     private String requestColor;
-    private String createdAt;
-    private boolean read;
 
-    public Notification() {}
+    @Column(name = "created_at", nullable = false)
+    private OffsetDateTime createdAt;
 
-    public Notification(String id, String role, String topic, String requestColor, String createdAt, boolean read) {
+    @Column(nullable = false)
+    private boolean read = false;
+
+    // =========================
+    // CONSTRUCTORS
+    // =========================
+
+    public Notification() {
+        this.createdAt = OffsetDateTime.now();
+    }
+
+    public Notification(String role, String topic, String requestColor) {
+        this.role = role;
+        this.topic = topic;
+        this.requestColor = requestColor;
+        this.createdAt = OffsetDateTime.now();
+        this.read = false;
+    }
+
+    public Notification(
+            String id,
+            String role,
+            String topic,
+            String requestColor,
+            OffsetDateTime createdAt,
+            boolean read
+    ) {
         this.id = id;
         this.role = role;
         this.topic = topic;
@@ -19,6 +55,10 @@ public class Notification {
         this.createdAt = createdAt;
         this.read = read;
     }
+
+    // =========================
+    // GETTERS
+    // =========================
 
     public String getId() {
         return id;
@@ -36,13 +76,17 @@ public class Notification {
         return requestColor;
     }
 
-    public String getCreatedAt() {
+    public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
     public boolean isRead() {
         return read;
     }
+
+    // =========================
+    // SETTERS
+    // =========================
 
     public void setId(String id) {
         this.id = id;
@@ -60,7 +104,7 @@ public class Notification {
         this.requestColor = requestColor;
     }
 
-    public void setCreatedAt(String createdAt) {
+    public void setCreatedAt(OffsetDateTime createdAt) {
         this.createdAt = createdAt;
     }
 

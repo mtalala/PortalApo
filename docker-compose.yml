@@ -3,7 +3,7 @@ services:
     image: postgres:15
     container_name: apo-postgres
     environment:
-      POSTGRES_DB: apo
+      POSTGRES_DB: portalapo
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -21,9 +21,9 @@ services:
     image: apo-backend
     container_name: apo-backend
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/apo
-      DB_USER: postgres
-      DB_PASS: postgres
+      DATABASE_URL: jdbc:postgresql://postgres:5432/portalapo
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
     ports:
       - "8080:8080"
     depends_on:

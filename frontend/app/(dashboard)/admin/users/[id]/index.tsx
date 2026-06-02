@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, Alert, Switch } from 'react-native';
+import { View, Text, TextInput, Button, Alert, Switch, Pressable } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { adminUserService, AdminUser } from '@/packages/services/adminUserService';
 
@@ -7,6 +7,8 @@ export default function EditUserScreen() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
 
   const [user, setUser] = useState<AdminUser | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [availableOrientadores, setAvailableOrientadores] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -21,8 +23,11 @@ export default function EditUserScreen() {
 
     try {
       const data = await adminUserService.getAll();
+      setAvailableOrientadores(
+        data.filter((u) => u.role?.toUpperCase() === 'ORIENTADOR' && u.ativo)
+      );
 
-      const foundUser = data.find(u => String(u.id) === userId);
+      const foundUser = data.find((u) => String(u.id) === userId);
 
       if (foundUser) setUser(foundUser);
     } catch {
@@ -36,7 +41,12 @@ export default function EditUserScreen() {
     setLoading(true);
 
     try {
-      await adminUserService.update(userId, user);
+      const payload = {
+        ...user,
+        password: newPassword.trim(),
+        orientadorUserIds: user.role?.toUpperCase() === 'ALUNO' ? user.orientadorUserIds ?? [] : [],
+      };
+      await adminUserService.update(userId, payload);
       Alert.alert('Sucesso', 'Usuário atualizado');
       router.back();
     } catch {
@@ -60,9 +70,18 @@ export default function EditUserScreen() {
       />
 
       <TextInput
+        placeholder="E-mail"
+        value={user.email || ''}
+        onChangeText={(text) => setUser({ ...user, email: text })}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
+      />
+
+      <TextInput
         placeholder="Password (deixe vazio para manter)"
-        value={user.password || ''}
-        onChangeText={(text) => setUser({ ...user, password: text })}
+        value={newPassword}
+        onChangeText={setNewPassword}
         secureTextEntry
         style={{ borderWidth: 1, padding: 10, marginBottom: 10 }}
       />
@@ -81,6 +100,46 @@ export default function EditUserScreen() {
           onValueChange={(value) => setUser({ ...user, ativo: value })}
         />
       </View>
+
+      {user.role?.toUpperCase() === 'ALUNO' && (
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ fontWeight: '600', marginBottom: 8 }}>Orientadores vinculados</Text>
+          {availableOrientadores.length === 0 ? (
+            <Text>Nenhum orientador ativo encontrado.</Text>
+          ) : (
+            availableOrientadores.map((orientador) => {
+              const selected = user.orientadorUserIds?.includes(orientador.id) ?? false;
+              return (
+                <Pressable
+                  key={orientador.id}
+                  onPress={() =>
+                    setUser((prev) => {
+                      if (!prev) return prev;
+                      const current = prev.orientadorUserIds ?? [];
+                      const updated = current.includes(orientador.id)
+                        ? current.filter((id) => id !== orientador.id)
+                        : [...current, orientador.id];
+                      return { ...prev, orientadorUserIds: updated };
+                    })
+                  }
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: 10,
+                    borderWidth: 1,
+                    borderColor: selected ? '#2563eb' : '#d1d5db',
+                    borderRadius: 6,
+                    marginBottom: 8,
+                    backgroundColor: selected ? '#e0f2fe' : '#fff',
+                  }}
+                >
+                  <Text>{orientador.username}</Text>
+                </Pressable>
+              );
+            })
+          )}
+        </View>
+      )}
 
       <Button
         title={loading ? 'Atualizando...' : 'Atualizar'}

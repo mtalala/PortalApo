@@ -27,7 +27,7 @@ export default function AdminUsersScreen() {
     try {
       await adminUserService.delete(id);
 
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      setUsers((prev) => prev.filter((u) => String(u.id) !== id));
 
       Alert.alert('Sucesso', 'Usuário deletado');
     } catch {
@@ -50,7 +50,7 @@ export default function AdminUsersScreen() {
 
       <FlatList
         data={users}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View style={{ padding: 10, borderBottomWidth: 1 }}>
             <Text>
@@ -68,7 +68,7 @@ export default function AdminUsersScreen() {
               <Button
                 title="Deletar"
                 color="red"
-                onPress={() => handleDelete(item.id)}
+                onPress={() => handleDelete(String(item.id))}
               />
             </View>
           </View>

@@ -26,6 +26,9 @@ const activities: Activity[] = [
   { id: 22, label: "Curso de formação profissional diretamente relacionado ao tema", points: 4 },
   { id: 23, label: "Apresentação em eventos internos", points: 2 },
   { id: 24, label: "Participação em eventos internos", points: 0.5 },
+  { id: 25, label: "Modalidade APO 25 — a definir conforme regulamento PPGCA 2025", points: 0 },
+  { id: 26, label: "Modalidade APO 26 — a definir conforme regulamento PPGCA 2025", points: 0 },
+  { id: 27, label: "Modalidade APO 27 — a definir conforme regulamento PPGCA 2025", points: 0 },
 ];
 
 export default activities;

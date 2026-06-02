@@ -2,11 +2,13 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Linking,
+  Modal,
   Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -32,6 +34,8 @@ export default function ApoViewScreen() {
   const [apo, setApo] = useState<Apo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [justificativa, setJustificativa] = useState("");
 
   const isDesktop =
     (Platform.OS === "web" && width >= 768) ||
@@ -87,12 +91,23 @@ export default function ApoViewScreen() {
     }
   };
 
+  const openRejectModal = () => {
+    setJustificativa("");
+    setRejectModalVisible(true);
+  };
+
   const handleReject = async () => {
     if (!apo) return;
+    if (!justificativa.trim()) {
+      setError("Informe uma justificativa para rejeitar.");
+      return;
+    }
 
     try {
-      const updated = await rejectApo(apo.id);
+      const updated = await rejectApo(apo.id, justificativa.trim());
       setApo(updated);
+      setRejectModalVisible(false);
+      setJustificativa("");
 
       router.replace({
         pathname: "/apos/[id]",
@@ -161,6 +176,11 @@ export default function ApoViewScreen() {
   }
 
   const allowedToApprove = canApproveApo(apo, user);
+  const userApproval = apo.approvals.find(
+    (approval) =>
+      String(approval.userId) === String(user.id) &&
+      approval.role.toLowerCase() === user.role
+  );
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -179,16 +199,36 @@ export default function ApoViewScreen() {
             marginBottom: 24,
           }}
         >
-          <Text
-            style={{
-              fontSize: isDesktop ? 32 : 22,
-              fontWeight: "700",
-              color: "#111827",
-              marginBottom: isDesktop ? 0 : 8,
-            }}
-          >
-            APO {apo.codigoApo}
-          </Text>
+          <View>
+            <Text
+              style={{
+                fontSize: isDesktop ? 32 : 22,
+                fontWeight: "700",
+                color: "#111827",
+                marginBottom: isDesktop ? 0 : 8,
+              }}
+            >
+              APO {apo.codigoApo}
+            </Text>
+            {userApproval && (
+              <View
+                style={{
+                  marginTop: 8,
+                  backgroundColor: userApproval.approved
+                    ? "#16a34a"
+                    : "#dc2626",
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  alignSelf: "flex-start",
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+                  {userApproval.approved ? "Aprovada" : "Rejeitada"}
+                </Text>
+              </View>
+            )}
+          </View>
 
           <View
             style={{
@@ -196,6 +236,7 @@ export default function ApoViewScreen() {
               paddingHorizontal: 14,
               paddingVertical: 6,
               borderRadius: 999,
+              marginTop: isDesktop ? 0 : 12,
             }}
           >
             <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
@@ -265,7 +306,7 @@ export default function ApoViewScreen() {
             </Pressable>
 
             <Pressable
-              onPress={handleReject}
+              onPress={openRejectModal}
               style={{
                 backgroundColor: "#dc2626",
                 padding: 14,
@@ -278,6 +319,80 @@ export default function ApoViewScreen() {
             </Pressable>
           </View>
         )}
+
+        <Modal
+          transparent
+          animationType="fade"
+          visible={rejectModalVisible}
+          onRequestClose={() => setRejectModalVisible(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(17,24,39,0.45)",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+            }}
+          >
+            <View
+              style={{
+                width: "100%",
+                maxWidth: 460,
+                backgroundColor: "#fff",
+                borderRadius: 8,
+                padding: 20,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12 }}>
+                Justificativa da rejeição
+              </Text>
+              <TextInput
+                value={justificativa}
+                onChangeText={setJustificativa}
+                multiline
+                textAlignVertical="top"
+                style={{
+                  minHeight: 120,
+                  borderWidth: 1,
+                  borderColor: "#d1d5db",
+                  borderRadius: 8,
+                  padding: 12,
+                  marginBottom: 16,
+                }}
+              />
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <Pressable
+                  onPress={() => setRejectModalVisible(false)}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: "#d1d5db",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text>Cancelar</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleReject}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    borderRadius: 8,
+                    backgroundColor: "#dc2626",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "700" }}>
+                    Rejeitar
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </SafeAreaView>
   );

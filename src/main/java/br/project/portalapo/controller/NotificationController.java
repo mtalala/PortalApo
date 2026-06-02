@@ -21,4 +21,19 @@ public class NotificationController {
     public List<Notification> getAll() {
         return service.findAll();
     }
+
+    @GetMapping("/unread")
+    public List<Notification> getUnread() {
+        return service.findUnread();
+    }
+
+    @PatchMapping("/{id}/read")
+    public void markAsRead(@PathVariable String id) {
+        service.markAsRead(id);
+    }
+
+    @PatchMapping("/read-all")
+    public void markAllAsRead() {
+        service.markAllAsRead();
+    }
 }

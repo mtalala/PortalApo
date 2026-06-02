@@ -1,11 +1,13 @@
 import request from './api';
 
 export interface AdminUser {
-  id: string;
+  id: number;
   username: string;
   password: string;
+  email?: string;
   role: string;
   ativo: boolean;
+  orientadorUserIds?: number[];
   pessoa?: any;
 }
 

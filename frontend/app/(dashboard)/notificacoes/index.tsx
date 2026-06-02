@@ -1,9 +1,8 @@
 import { APO_DECORATIVE_COLORS } from "@/packages/data/apoDecorativeColors";
-import { notifications as mockNotifications } from "@/packages/data/notifications";
 import { Notification } from "@/packages/types/notification";
 import { timeAgo } from "@/packages/utils/timeAgo";
 import { MaterialIcons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -25,21 +24,55 @@ function getDecorativeColorById(id: string): string {
 }
 
 export default function NotificationsScreen({ sidebarWidth = 256 }) {
-  const [notifications, setNotifications] =
-    useState<Notification[]>(mockNotifications);
-
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const { width } = useWindowDimensions();
 
   const isMobile = width < 768;
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+  /**
+   * CARREGA NOTIFICAÇÕES REAIS DO BACKEND (POSTGRES)
+   */
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/notifications");
+
+        if (!res.ok) throw new Error("Erro ao buscar notificações");
+
+        const data: Notification[] = await res.json();
+        setNotifications(data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    load();
+  }, []);
+
+  const markAsRead = async (id: string) => {
+    try {
+      await fetch(`/api/notifications/${id}/read`, {
+        method: "PATCH",
+      });
+
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+      );
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      await fetch(`/api/notifications/read-all`, {
+        method: "PATCH",
+      });
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const getMessage = (role: Notification["role"]) =>
@@ -49,19 +82,15 @@ export default function NotificationsScreen({ sidebarWidth = 256 }) {
 
   const hasUnread = notifications.some((n) => !n.read);
 
-  /**
-   * Mesmo conceito do PendentesScreen:
-   * - Mobile: 100% largura
-   * - Desktop/Web: largura centralizada com maxWidth
-   */
   const MAX_WIDTH = 1024;
+
   const containerWidth = isMobile
     ? "100%"
     : Math.min(width - sidebarWidth - 32, MAX_WIDTH);
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16 }}>
-      {/* Botão fixo */}
+      {/* Botão marcar todas */}
       {hasUnread && (
         <Pressable
           onPress={markAllAsRead}
@@ -79,7 +108,7 @@ export default function NotificationsScreen({ sidebarWidth = 256 }) {
       )}
 
       <View style={{ width: containerWidth, alignSelf: "center" }}>
-        {/* Header */}
+        {/* HEADER */}
         <View style={{ marginBottom: 24 }}>
           <Text style={{ fontSize: 32, fontWeight: "700", color: "#111827" }}>
             Notificações
@@ -89,7 +118,7 @@ export default function NotificationsScreen({ sidebarWidth = 256 }) {
           </Text>
         </View>
 
-        {/* Lista */}
+        {/* LISTA */}
         <View style={{ flexDirection: "column", gap: 12 }}>
           {notifications.map((n) => {
             const decorativeColor = getDecorativeColorById(n.id);
@@ -108,7 +137,7 @@ export default function NotificationsScreen({ sidebarWidth = 256 }) {
                   overflow: "hidden",
                 }}
               >
-                {/* Stroke */}
+                {/* barra lateral */}
                 <View
                   style={{
                     position: "absolute",
@@ -120,7 +149,7 @@ export default function NotificationsScreen({ sidebarWidth = 256 }) {
                   }}
                 />
 
-                {/* Conteúdo */}
+                {/* conteúdo */}
                 <View style={{ flex: 1, marginLeft: 8 }}>
                   <Text
                     style={{
@@ -131,6 +160,7 @@ export default function NotificationsScreen({ sidebarWidth = 256 }) {
                   >
                     {getMessage(n.role)}
                   </Text>
+
                   <Text
                     style={{
                       fontSize: 12,
@@ -142,7 +172,7 @@ export default function NotificationsScreen({ sidebarWidth = 256 }) {
                   </Text>
                 </View>
 
-                {/* Ações */}
+                {/* ações */}
                 {!n.read && (
                   <View
                     style={{
@@ -160,6 +190,7 @@ export default function NotificationsScreen({ sidebarWidth = 256 }) {
                         backgroundColor: "#dc2626",
                       }}
                     />
+
                     <Pressable
                       onPress={() => markAsRead(n.id)}
                       style={{ padding: 4 }}

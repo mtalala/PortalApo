@@ -17,14 +17,20 @@ public class DataInitializer implements CommandLineRunner {
     private PasswordEncoder passwordEncoder;
 
     @Override
-    public void run(String... args) throws Exception {
-        if (userRepository.findByUsername("admin").isEmpty()) {
-            User admin = new User();
-            admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setRole("ADMIN");
-            admin.setAtivo(true);
-            userRepository.save(admin);
-        }
+    public void run(String... args) {
+
+        System.out.println("INIT RUNNING");
+
+        User admin = userRepository.findByUsername("admin")
+                .orElseGet(() -> {
+                    User u = new User();
+                    u.setUsername("admin");
+                    u.setPassword(passwordEncoder.encode("admin123"));
+                    u.setRole("ADMIN");
+                    u.setAtivo(true);
+                    return userRepository.save(u);
+                });
+
+        System.out.println("USER: " + admin.getUsername());
     }
 }

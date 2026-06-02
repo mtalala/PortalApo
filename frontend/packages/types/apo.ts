@@ -4,8 +4,10 @@ import type { Role } from "./user";
 
 export interface ApoApproval {
   userId: string;
-  role: Role;
+  role: Role | Uppercase<Role> | string;
   approved: boolean;
+  justificativa?: string;
+  avaliadoEm?: string;
 }
 
 export interface Apo {
@@ -19,6 +21,7 @@ export interface Apo {
   coordenador: string;
 
   status: ApoStatus;
+  dataAtividade?: string;
 
   /**
    * Data de conclusão da APO.
@@ -36,9 +39,16 @@ export interface Apo {
   files: {
     name: string;
     url: string;
+    hash?: string;
+    contentType?: string;
+    tamanhoBytes?: number;
   }[];
 
   approvals: ApoApproval[];
 
   requiredCommissionApprovals: number;
+
+  orientadorUserIds?: number[];
+  orientadorUsernames?: string[];
+  coordenadorUserId?: number;
 }

@@ -8,7 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions
+  useWindowDimensions,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 
@@ -23,11 +23,13 @@ interface SidebarProps {
 }
 
 type DashboardRoute =
+  | "/"
   | "/(dashboard)/historico"
   | "/(dashboard)/notificacoes"
   | "/(dashboard)/pendentes"
   | "/(dashboard)/em-andamento"
-  | "/(dashboard)/concluidas";
+  | "/(dashboard)/concluidas"
+  | "/(dashboard)/relatorios";
 
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -39,17 +41,14 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const SIDEBAR_WIDTH = 256;
   const COLLAPSED_WIDTH = 56;
 
-  // Mobile slide animation
   const translateX = useRef(
     new Animated.Value(isMobile && collapsed ? -width : 0)
   ).current;
 
-  // Desktop width animation
   const widthAnim = useRef(
     new Animated.Value(!isMobile && collapsed ? COLLAPSED_WIDTH : SIDEBAR_WIDTH)
   ).current;
 
-  // Desktop text opacity animation
   const textOpacity = useRef(new Animated.Value(!collapsed ? 1 : 0)).current;
 
   useEffect(() => {
@@ -67,6 +66,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         easing: Easing.out(Easing.exp),
         useNativeDriver: false,
       }).start();
+
       Animated.timing(textOpacity, {
         toValue: collapsed ? 0 : 1,
         duration: 250,
@@ -83,6 +83,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         avatar: "https://i.pravatar.cc/150?img=32",
       });
     }, 400);
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -127,6 +128,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       {isMobile && !collapsed && (
         <Pressable style={styles.overlay} onPress={() => setCollapsed(true)} />
       )}
+
       {isMobile && (
         <Pressable
           onPress={() => setCollapsed(!collapsed)}
@@ -135,6 +137,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           <Feather name="menu" size={28} color="#111827" />
         </Pressable>
       )}
+
       <Animated.View
         style={[
           styles.sidebar,
@@ -153,15 +156,31 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
             <Feather name="columns" size={20} color="#4B5563" />
           </Pressable>
         )}
+
         <ScrollView contentContainerStyle={styles.scroll}>
+          {navItem("/", "Home", "home")}
+
+          <View style={styles.divider} />
+
           {navItem("/(dashboard)/historico", "Histórico", "clock")}
           {navItem("/(dashboard)/notificacoes", "Notificações", "bell")}
+          {navItem("/(dashboard)/relatorios", "Relatórios", "bar-chart-2")}
+
           <View style={styles.divider} />
-          {!collapsed && <Animated.Text style={[styles.sectionLabel, { opacity: textOpacity }]}>Solicitações</Animated.Text>}
+
+          {!collapsed && (
+            <Animated.Text
+              style={[styles.sectionLabel, { opacity: textOpacity }]}
+            >
+              Solicitações
+            </Animated.Text>
+          )}
+
           {navItem("/(dashboard)/pendentes", "Pendentes", "clock")}
           {navItem("/(dashboard)/em-andamento", "Em andamento", "loader")}
           {navItem("/(dashboard)/concluidas", "Concluídas", "check-circle")}
         </ScrollView>
+
         {user && (
           <View
             style={[
@@ -171,7 +190,9 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           >
             <Image source={{ uri: user.avatar }} style={styles.avatar} />
             {!collapsed && (
-              <Animated.Text style={[styles.userName, { opacity: textOpacity }]}>
+              <Animated.Text
+                style={[styles.userName, { opacity: textOpacity }]}
+              >
                 {user.name}
               </Animated.Text>
             )}

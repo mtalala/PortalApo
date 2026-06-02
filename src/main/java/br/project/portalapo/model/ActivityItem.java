@@ -2,14 +2,9 @@
 package br.project.portalapo.model;
 
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "activities")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class ActivityItem {
 
     @Id
@@ -17,5 +12,37 @@ public class ActivityItem {
     private Long id;
 
     private String label;
-    private Integer points;
+    private Double points;
+
+    public ActivityItem() {}
+
+    public ActivityItem(Long id, String label, Number points) {
+        this.id = id;
+        this.label = label;
+        this.points = points != null ? points.doubleValue() : null;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public Double getPoints() {
+        return points;
+    }
+
+    public void setPoints(Number points) {
+        this.points = points != null ? points.doubleValue() : null;
+    }
 }
