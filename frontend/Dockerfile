@@ -1,23 +1,24 @@
-# Frontend Dockerfile for Expo React Native Web
-FROM node:18-bullseye-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install global Expo CLI for running the app
-RUN npm install -g expo-cli@latest
+# Instala as dependências necessárias para o Expo rodar no Linux Alpine
+RUN apk add --no-cache bash
 
-# Copy dependency manifests first for better Docker layer caching
-COPY package.json package-lock.json ./
+# Instala o CLI do Expo globalmente (evita erros de comando não encontrado)
+RUN npm install -g expo-cli
 
-RUN npm install --production=false
+# Copia os arquivos de configuração primeiro para aproveitar o cache do Docker
+COPY package*.json ./
 
-# Copy source files
-COPY . ./
+# Instala as dependências do seu projeto
+RUN npm install
 
-EXPOSE 19000 19001 19002 19006
+# Copia o restante dos arquivos do seu código
+COPY . .
 
-ENV EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
-ENV REACT_NATIVE_PACKAGER_HOSTNAME=0.0.0.0
+# O Expo Web usa por padrão a porta 19006 (ou 8081 nas versões mais novas)
+EXPOSE 8081
 
-# Start Expo for web/mobile. Use tunnel to allow devices and remote simulators to connect.
-CMD ["npm", "run", "start", "--", "--host", "0.0.0.0", "--tunnel"]
+# O comando força o Expo a aceitar conexões externas e rodar no modo web
+CMD ["npx", "expo", "start", "--web", "--host", "lan"]

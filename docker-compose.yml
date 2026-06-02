@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:15
@@ -6,12 +8,10 @@ services:
       POSTGRES_DB: portalapo
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d portalapo"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -35,14 +35,13 @@ services:
       context: ./frontend
     image: apo-frontend
     container_name: apo-frontend
-    environment:
-      EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
-      REACT_NATIVE_PACKAGER_HOSTNAME: 0.0.0.0
+    # Mudança aqui: Força o modo web na porta correta exposta para a rede local/externa
+    command: npx expo start --web --host lan
     ports:
-      - "19000:19000"
-      - "19001:19001"
-      - "19002:19002"
-      - "19006:19006"
+      - "8081:8081" # Porta padrão do Expo Web moderno (mude para 80:8081 se quiser acessar direto sem digitar a porta)
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
 
